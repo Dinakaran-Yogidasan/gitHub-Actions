@@ -7,9 +7,7 @@ run-name: 'build - ${{ github.event.head_commit.message }}'
       - master
 jobs:
   build-service:
-    runs-on:
-      - self-hosted
-      - mig8x32-p
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pages: write
