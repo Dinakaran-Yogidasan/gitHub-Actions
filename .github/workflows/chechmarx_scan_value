@@ -1,0 +1,57 @@
+name: Checkmarx Scan
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  checkmarx-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build with Maven
+        run: mvn -B clean install
+
+      - name: Install Checkmarx CLI
+        run: |
+          curl -LO https://github.com/checkmarx-ts/ast-cli/releases/download/v1.4.1/ast-cli_1.4.1_linux_x64.tar.gz
+          tar -xzf ast-cli_1.4.1_linux_x64.tar.gz
+          sudo mv ast-cli /usr/local/bin/
+
+      - name: Run Checkmarx Scan
+        env:
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_URL: ${{ secrets.CX_BASE_URL }}
+          CX_PROJECT_NAME: "showroom-xpl-latam"
+          CX_TEAM_PATH: "\\CxServer\\Ford Enterprise\\Marketing and Sales\\eCommerce Latam"
+          CX_PRESET: "100005"
+          CX_SCAN_CYCLE: "20"
+        run: |
+          ast-cli --client-secret $CX_CLIENT_SECRET --base-url $CX_BASE_URL --project-name $CX_PROJECT_NAME --team-path $CX_TEAM_PATH --preset $CX_PRESET --scan-cycle $CX_SCAN_CYCLE --output-format JSON --output-path cx-scan-results.json
+
+      - name: Upload Checkmarx Scan Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: checkmarx-scan-results
+          path: cx-scan-results.json
