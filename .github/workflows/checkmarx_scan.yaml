@@ -3,6 +3,11 @@ run-name: '${{ github.actor }} is learning GitHub Actions'
 checkmarx_scan:
   environment: '${{ inputs.DEPLOYMENT_ENV }}'
   name: checkmarx_scan
+  on: 
+  push:
+    branches:
+      - main
+      - master
   runs-on:
     - self-hosted
     - Linux
