@@ -1,96 +1,24 @@
 name: checkmarx_scan
-run-name: '${{ github.actor }} is learning GitHub Actions'
-checkmarx_scan:
-  environment: '${{ inputs.DEPLOYMENT_ENV }}'
-  name: checkmarx_scan
-  on: 
+run-name: 'build - ${{ github.event.head_commit.message }}'
+'on':
   push:
     branches:
       - main
       - master
-  runs-on:
-    - self-hosted
-    - Linux
-    - X64
-    - mig8x32-p
-  needs:
-    - build_service
-  permissions:
-    contents: read
-    issues: write
-    pull-requests: write
-    security-events: write
-    actions: read
-  steps:
-    - id: checkmarx_scan_enable
-      name: Checkmarx Scan Enable status
-      run: >
-        echo "Checkmarx Enable status: ${{
-        needs.build_service.outputs.CHECKMARX_ENABLED }}"
-    - id: import_vault_secrets
-      name: Import Secrets
-      if: needs.build_service.outputs.CHECKMARX_ENABLED == 'true'
-      uses: hashicorp/vault-action@v3.0.0
-      with:
-        url: 'https://vault-os.app.ford.com'
-        method: approle
-        roleId: '${{ secrets.VAULT_COMMON_ROLE_ID }}'
-        secretId: '${{ secrets.VAULT_COMMON_SECRET_ID }}'
-        secrets: >
-          kv1/gcp-imgsl-vault-admin/56227/lower-env/common/github_creds
-          pat_token | GDEV9_GITHUB_TOKEN;
-
-          kv1/gcp-imgsl-vault-admin/56227/lower-env/common/checkmarx_creds
-          username | CHECKM_USER;
-
-          kv1/gcp-imgsl-vault-admin/56227/lower-env/common/checkmarx_creds
-          password | CHECKM_PASSWORD
-    - id: checkout_service_repo
-      name: checkout Service Repo
-      if: needs.build_service.outputs.CHECKMARX_ENABLED == 'true'
-      uses: actions/checkout@v4
-    - id: checkout_cicd_repo
-      name: checkout cicd Repo
-      if: needs.build_service.outputs.CHECKMARX_ENABLED == 'true'
-      uses: actions/checkout@v4
-      with:
-        repository: '${{ github.repository_owner }}/${{ env.ENV_CICD_REPO_NAME }}'
-        ref: '${{ env.ENV_CIDCD_BRANCH_NAME }}'
-        token: '${{ env.GDEV9_GITHUB_TOKEN }}'
-        path: '${{ env.ENV_CICD_LOCAL_PATH }}'
-    - id: get_checkmarx_dtls
-      name: get checkmarx details
-      if: needs.build_service.outputs.CHECKMARX_ENABLED == 'true'
-      run: >
-        cat > ${GITHUB_WORKSPACE}/ga-pipeline-config.json<< EOF
-
-        ${{ vars.GA_JSON_CONFIG }}
-
-        EOF
-
-        chmod +x ${{ env.ENV_CICD_LOCAL_PATH
-        }}/.github/workflows/scripts/pipeline.sh
-
-        ./${{ env.ENV_CICD_LOCAL_PATH }}/.github/workflows/scripts/pipeline.sh
-        checkmarx
-    - id: checkmarx_sacn
-      name: Checkmarx Scan
-      if: needs.build_service.outputs.CHECKMARX_ENABLED == 'true'
-      uses: checkmarx-ts/checkmarx-github-action@v1.0.6
-      with:
-        cxServer: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_SERVERURL }}'
-        cxUsername: '${{ env.CHECKM_USER }}'
-        cxPassword: '${{ env.CHECKM_PASSWORD }}'
-        cxTeam: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_TEAMPATH }}'
-        cxProject: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_PROJECTNAME }}'
-        cxPreset: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_PRESETID }}'
-        cxIncremental: true
-        cxHigh: >-
-          ${{ steps.get_checkmarx_dtls.outputs.CHECKM_ENABLE_BREAKBUILD_ONISSUE
-          == 'true' && steps.get_checkmarx_dtls.outputs.CHECKM_HIGHSEV || -1 }}
-        cxMedium: >-
-          ${{ steps.get_checkmarx_dtls.outputs.CHECKM_ENABLE_BREAKBUILD_ONISSUE
-          == 'true' && steps.get_checkmarx_dtls.outputs.CHECKM_MEDSEV || -1 }}
-        cxLow: >-
-          ${{ steps.get_checkmarx_dtls.outputs.CHECKM_ENABLE_BREAKBUILD_ONISSUE
-          == 'true' && steps.get_checkmarx_dtls.outputs.CHECKM_LOWSEV || -1 }}
+jobs:
+  build-service:
+    runs-on:
+      - self-hosted
+      - mig8x32-p
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    env:
+      ENV_KEY: dev
+    steps:
+      - uses: actions/checkout@v4
+      - id: read_config
+        name: Read Configuration File
+        run: |
+          echo "checkmarx_scan"
