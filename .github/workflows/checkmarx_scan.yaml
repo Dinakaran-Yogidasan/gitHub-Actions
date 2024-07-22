@@ -61,7 +61,7 @@ jobs:
           echo "::set-output
           name=CHECKM_SERVERURL::https://www.checkmarx.company.com/"
       - name: Checkmarx Analyze
-        uses: checkmarx-ts/checkmarx-ts-action@v1.0.0
+        uses: actions/checkout@v2
         with:
           cxServer: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_SERVERURL }}'
           cxUsername: '${{ env.CHECKM_USER }}'
