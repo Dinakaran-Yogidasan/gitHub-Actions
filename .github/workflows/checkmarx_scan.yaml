@@ -20,3 +20,68 @@ jobs:
         name: Read Configuration File
         run: |
           echo "checkmarx_scan"
+           steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Load Configuration
+        id: load_config
+        run: >
+          echo "maven=apache-maven-3.6.3" >> $GITHUB_ENV
+
+          echo "globalMavenSettingsConfig=/path/to/maven/settings.xml" >>
+          $GITHUB_ENV
+      - name: Get Filter Pattern
+        id: get_filter_pattern
+        run: >
+          echo "::set-output name=filter_pattern::!**/.hg/**/*, !**/.git/**/*,
+          !**/.bzr/**/*, !**/.gitgnore/**/*, !**/.gradle/**/*,
+          !**/.checkstyle/**/*, !**/.classpath/**/*, !**/bin/**/*, !**/obj/**/*,
+          !**/backup/**/*, !**/.idea/**/*, !**/*.DS_Store, !**/*.ipr, !**/*.iws,
+          !**/*.bak, !**/*.tmp, !**/*.aac, !**/*.aif, !**/*.iff, !**/*.m3u,
+          !**/*.mid, !**/*.mp3, !**/*.mpa, !**/*.ra, !**/*.wav, !**/*.wma,
+          !**/*.3g2, !**/*.3gp, !**/*.asf, !**/*.asx, !**/*.avi, !**/*.flv,
+          !**/*.mov, !**/*.mp4, !**/*.mpg, !**/*.rm, !**/*.swf, !**/*.vob,
+          !**/*.wmv, !**/*.bmp, !**/*.gif, !**/*.jpg, !**/*.png, !**/*.psd,
+          !**/*.tif, !**/*.swf, !**/*.jar, !**/*.zip, !**/*.rar, !**/*.exe,
+          !**/*.dll, !**/*.pdb, !**/*.7z, !**/*.gz, !**/*.tar.gz, !**/*.tar,
+          !**/*.gz, !**/*.ahtm, !**/*.ahtml, !**/*.fhtml, !**/*.hdm, !**/*.hdml,
+          !**/*.hsql, !**/*.ht, !**/*.hta, !**/*.htc, !**/*.htd, !**/*.war,
+          !**/*.ear, !**/*.htmls, !**/*.ihtml, !**/*.mht, !**/*.mhtm,
+          !**/*.mhtml, !**/*.ssi, !**/*.stm,
+          !**/*.bin,!**/*.lock,!**/*.svg,!**/*.obj, !**/*.stml, !**/*.ttml,
+          !**/*.txn, !**/*.xhtm, !**/*.xhtml, !**/*.class, !**/*.iml,
+          !Checkmarx/Reports/*.*, !**/*.yml, !**/*.gitignore, !**/*.pdf,
+          !**/*.xml, !**/*.svg, !**/*.ttf, !**/*.woff, !**/*.woff2, !**/*.eot,
+          !**/*.md, !**/*.test.js, !**/*.test.ts, !**/*.test.tsx, !**/*.spec.ts,
+          !**/*.http, !**/*.json, !OSADependencies.json, !**/node_modules/**/*,
+          !**/dist/**/*"
+      - name: Get Checkmarx Details
+        id: get_checkmarx_dtls
+        run: >
+          echo "::set-output
+          name=CHECKM_SERVERURL::https://www.checkmarx.company.com/"
+      - name: Checkmarx Analyze
+        uses: checkmarx-ts/checkmarx-ts-action@v1.0.0
+        with:
+          cxServer: '${{ steps.get_checkmarx_dtls.outputs.CHECKM_SERVERURL }}'
+          cxUsername: '${{ env.CHECKM_USER }}'
+          cxPassword: '${{ env.CHECKM_PASSWORD }}'
+          projectName: showroom-xpl-latam
+          preset: '100005'
+          teamPath: \CxServer\Ford Enterprise\Marketing and Sales\eCommerce Latam
+          filterPattern: '${{ steps.get_filter_pattern.outputs.filter_pattern }}'
+          excludeFolders: >-
+            .git,node,cypress,edi.shared,ui.apps,ui.frontend,target,ui.mocks,na,eu,automation,cicd,core,node_modules,authoring-docs,it.tests,ui.mocks,ui.automation,ui.apps.structure,dependencies,ui.content,ui.showroom,eu-showroom,na-showroom,lincoln-showroom,sa,mx,sa-showroom,mx-showroom
+          incremental: true
+          fullScanCycle: 20
+          fullScansScheduled: true
+          vulnerabilityThresholdEnabled: true
+          highThreshold: 1
+          mediumThreshold: 1
+          lowThreshold: 1
+          failBuildOnNewResults: true
+          failBuildOnNewSeverity: HIGH
+          generatePdfReport: false
+          sastEnabled: true
+          useOwnServerCredentials: true
+          vulnerabilityThresholdResult: FAILURE
